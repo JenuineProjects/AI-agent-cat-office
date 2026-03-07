@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cat Office Layout Editor</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; display: flex; height: 100vh; }
+
+  /* Sidebar */
+  #sidebar { width: 260px; background: #16213e; padding: 12px; overflow-y: auto; border-right: 2px solid #0f3460; }
+  #sidebar h2 { font-size: 14px; color: #e94560; margin: 10px 0 6px; }
+  .tool-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px; margin: 3px 0; border: 1px solid #333; border-radius: 4px;
+    background: #1a1a3e; cursor: pointer; color: #ddd; font-size: 12px; width: 100%;
+  }
+  .tool-btn:hover { background: #2a2a5e; }
+  .tool-btn.active { border-color: #e94560; background: #2a1a3e; }
+  .tool-btn .swatch { width: 20px; height: 20px; border-radius: 3px; flex-shrink: 0; }
+  .tool-btn .info { font-size: 10px; color: #888; }
+
+  #eraser-btn { background: #3a1a1a; border-color: #a33; }
+  #eraser-btn:hover { background: #4a2a2a; }
+
+  #size-controls { margin: 8px 0; font-size: 12px; }
+  #size-controls label { display: block; margin: 4px 0; }
+  #size-controls input { width: 50px; background: #222; color: #eee; border: 1px solid #444; padding: 2px 4px; }
+
+  /* Main area */
+  #main { flex: 1; display: flex; flex-direction: column; }
+
+  #toolbar { padding: 8px 12px; background: #16213e; display: flex; gap: 12px; align-items: center; font-size: 13px; }
+  #toolbar button { padding: 5px 12px; border: 1px solid #444; border-radius: 4px; background: #2a2a5e; color: #eee; cursor: pointer; }
+  #toolbar button:hover { background: #3a3a7e; }
+  #toolbar button.danger { background: #5a1a1a; border-color: #a33; }
+  #toolbar button.danger:hover { background: #7a2a2a; }
+  #toolbar .sep { width: 1px; height: 20px; background: #444; }
+
+  #views { flex: 1; display: flex; overflow: hidden; }
+
+  /* Grid view */
+  #grid-container { flex: 1; padding: 12px; overflow: auto; }
+  #grid-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+  #grid { display: inline-grid; gap: 1px; background: #333; border: 2px solid #555; }
+  .cell {
+    width: 28px; height: 28px; background: #f0ead6; position: relative; cursor: crosshair;
+    display: flex; align-items: center; justify-content: center; font-size: 7px; color: #333;
+  }
+  .cell.wall { background: #667788; cursor: default; }
+  .cell.occupied { cursor: pointer; }
+  .cell.hover-preview { outline: 2px solid #e94560; outline-offset: -1px; z-index: 1; }
+  .cell .furniture-overlay {
+    position: absolute; inset: 1px; border-radius: 2px; display: flex;
+    align-items: center; justify-content: center; font-size: 7px; font-weight: bold; color: #fff;
+    text-shadow: 0 0 2px #000;
+  }
+  .cell .coord { font-size: 6px; color: #aaa; position: absolute; bottom: 0; right: 1px; pointer-events: none; }
+
+  /* ISO preview */
+  #iso-container { width: 420px; border-left: 2px solid #0f3460; padding: 12px; overflow: auto; }
+  #iso-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+  #iso-canvas { background: #2d2d44; border-radius: 4px; }
+
+  /* Export panel */
+  #export-panel { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; }
+  #export-panel.show { display: flex; }
+  #export-box { background: #16213e; border: 2px solid #0f3460; border-radius: 8px; padding: 16px; width: 700px; max-height: 80vh; overflow: auto; }
+  #export-box h3 { margin-bottom: 8px; color: #e94560; }
+  #export-box textarea { width: 100%; height: 400px; background: #0a0a1a; color: #88ff88; font-family: monospace; font-size: 11px; border: 1px solid #333; padding: 8px; }
+  #export-box button { margin-top: 8px; padding: 6px 16px; background: #e94560; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+
+  #item-count { font-size: 12px; color: #888; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h1 style="font-size:16px; color:#e94560; margin-bottom:8px;">Cat Office Editor</h1>
+
+  <button class="tool-btn" id="eraser-btn" onclick="selectTool('eraser')">
+    <div class="swatch" style="background:#a33; display:flex; align-items:center; justify-content:center;">X</div>
+    <div>Eraser</div>
+  </button>
+
+  <div id="size-controls">
+    <label>Width: <input type="number" id="sizeW" value="1" min="1" max="6"></label>
+    <label>Height: <input type="number" id="sizeH" value="1" min="1" max="6"></label>
+    <button class="tool-btn" onclick="rotateSize()" style="margin-top:4px; background:#2a3a5e;">
+      <div class="swatch" style="background:#4466aa; display:flex; align-items:center; justify-content:center; font-size:14px;">&#8635;</div>
+      <div>Rotate (R key)</div>
+    </button>
+  </div>
+
+  <h2>Office</h2>
+  <button class="tool-btn" onclick="selectTool('desk')">
+    <div class="swatch" style="background:#8B6914;"></div>
+    <div>Desk <span class="info">(2x1 rec.)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('monitor')">
+    <div class="swatch" style="background:#222233;"></div>
+    <div>Monitor <span class="info">(1x1)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('chair')">
+    <div class="swatch" style="background:#555577;"></div>
+    <div>Chair <span class="info">(1x1)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('filing_shelf')">
+    <div class="swatch" style="background:#7B5E3C;"></div>
+    <div>Filing Shelf <span class="info">(2x1 rec.)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('bookshelf')">
+    <div class="swatch" style="background:#8B5E3C;"></div>
+    <div>Bookshelf <span class="info">(3x1 rec.)</span></div>
+  </button>
+
+  <h2>Walls</h2>
+  <button class="tool-btn" onclick="selectTool('window')">
+    <div class="swatch" style="background:#AADDFF;"></div>
+    <div>Window <span class="info">(3x1 rec.)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('painting')">
+    <div class="swatch" style="background:#5C3A1E;"></div>
+    <div>Painting <span class="info">(1x1)</span></div>
+  </button>
+
+  <h2>Cat Play</h2>
+  <button class="tool-btn" onclick="selectTool('cat_tree')">
+    <div class="swatch" style="background:#997744;"></div>
+    <div>Cat Playground <span class="info">(4x4 rec.)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('scratching_post')">
+    <div class="swatch" style="background:#BB9966;"></div>
+    <div>Scratching Post <span class="info">(1x1)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('ball')">
+    <div class="swatch" style="background:#4488DD; border-radius:50%;"></div>
+    <div>Ball <span class="info">(1x1)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('yarn_ball')">
+    <div class="swatch" style="background:#DD4455; border-radius:50%;"></div>
+    <div>Yarn Ball <span class="info">(1x1)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('mouse_toy')">
+    <div class="swatch" style="background:#888877;"></div>
+    <div>Mouse Toy <span class="info">(1x1)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('cardboard_box')">
+    <div class="swatch" style="background:#BB9955;"></div>
+    <div>Cardboard Box <span class="info">(1x1)</span></div>
+  </button>
+
+  <h2>Cat Care</h2>
+  <button class="tool-btn" onclick="selectTool('food_bowl')">
+    <div class="swatch" style="background:#4477CC; border-radius:50%;"></div>
+    <div>Food Bowl <span class="info">(1x1)</span></div>
+  </button>
+  <button class="tool-btn" onclick="selectTool('cat_bed')">
+    <div class="swatch" style="background:#6644AA;"></div>
+    <div>Cat Bed <span class="info">(2x2 rec.)</span></div>
+  </button>
+
+  <h2>Decoration</h2>
+  <button class="tool-btn" onclick="selectTool('plant')">
+    <div class="swatch" style="background:#44AA44;"></div>
+    <div>Plant <span class="info">(1x1)</span></div>
+  </button>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <button onclick="clearAll()" class="danger">Clear All</button>
+    <button onclick="undoAction()">Undo</button>
+    <div class="sep"></div>
+    <button onclick="exportLayout()" style="background:#0a6640;">Export Code</button>
+    <div class="sep"></div>
+    <span id="item-count">Items: 0</span>
+    <span style="flex:1;"></span>
+    <span style="font-size:11px; color:#666;">Click grid to place. Right-click to erase.</span>
+  </div>
+
+  <div id="views">
+    <div id="grid-container">
+      <div id="grid-label">Top-down Grid (20x14) &mdash; y=0 is back wall, y=13 is front</div>
+      <div id="grid"></div>
+    </div>
+    <div id="iso-container">
+      <div id="iso-label">Isometric Preview</div>
+      <canvas id="iso-canvas" width="400" height="380"></canvas>
+    </div>
+  </div>
+</div>
+
+<div id="export-panel">
+  <div id="export-box">
+    <h3>Copy this into officeLayout.ts</h3>
+    <p style="font-size:11px; color:#888; margin-bottom:8px;">Replace the <code>furniture</code> array contents in <code>packages/server/src/officeLayout.ts</code></p>
+    <textarea id="export-code" readonly></textarea>
+    <button onclick="copyExport()">Copy to Clipboard</button>
+    <button onclick="document.getElementById('export-panel').classList.remove('show')" style="background:#444; margin-left:8px;">Close</button>
+  </div>
+</div>
+
+<script>
+const W = 20, H = 14;
+const COLORS = {
+  desk: '#8B6914', monitor: '#222244', chair: '#555577', food_bowl: '#4477CC',
+  yarn_ball: '#DD4455', cat_bed: '#6644AA', cardboard_box: '#BB9955',
+  plant: '#44AA44', bookshelf: '#8B5E3C', cat_tree: '#997744', ball: '#4488DD',
+  painting: '#5C3A1E', window: '#88CCEE', filing_shelf: '#7B5E3C',
+  mouse_toy: '#888877', scratching_post: '#BB9966',
+};
+const LABELS = {
+  desk: 'DSK', monitor: 'MON', chair: 'CHR', food_bowl: 'BWL',
+  yarn_ball: 'YRN', cat_bed: 'BED', cardboard_box: 'BOX',
+  plant: 'PLT', bookshelf: 'BKS', cat_tree: 'PLY', ball: 'BAL',
+  painting: 'PIC', window: 'WIN', filing_shelf: 'SHF',
+  mouse_toy: 'MSE', scratching_post: 'SCR',
+};
+const DEFAULT_SIZES = {
+  desk: [2,1], monitor: [1,1], chair: [1,1], food_bowl: [1,1],
+  yarn_ball: [1,1], cat_bed: [2,2], cardboard_box: [1,1],
+  plant: [1,1], bookshelf: [3,1], cat_tree: [4,4], ball: [1,1],
+  painting: [1,1], window: [3,1], filing_shelf: [2,1],
+  mouse_toy: [1,1], scratching_post: [1,1],
+};
+
+let grid = []; // grid[y][x] = null | { type, id, originX, originY, w, h }
+let furniture = []; // { id, type, position:{x,y}, size:{width,height} }
+let currentTool = null;
+let nextId = {};
+let history = [];
+
+function init() {
+  for (let y = 0; y < H; y++) {
+    grid[y] = [];
+    for (let x = 0; x < W; x++) grid[y][x] = null;
+  }
+  buildGrid();
+  renderIso();
+}
+
+function buildGrid() {
+  const el = document.getElementById('grid');
+  el.style.gridTemplateColumns = `repeat(${W}, 28px)`;
+  el.innerHTML = '';
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (y === 0 || y === H-1 || x === 0 || x === W-1 ? ' wall' : '');
+      cell.dataset.x = x;
+      cell.dataset.y = y;
+      cell.addEventListener('mousedown', (e) => { e.preventDefault(); onCellClick(x, y, e); });
+      cell.addEventListener('mouseenter', (e) => onCellHover(x, y, e));
+      cell.addEventListener('mouseleave', () => clearHover());
+      cell.addEventListener('contextmenu', (e) => { e.preventDefault(); eraseAt(x, y); });
+      // Coordinate label
+      const coord = document.createElement('span');
+      coord.className = 'coord';
+      coord.textContent = `${x},${y}`;
+      cell.appendChild(coord);
+      el.appendChild(cell);
+    }
+  }
+  refreshGrid();
+}
+
+function refreshGrid() {
+  const cells = document.querySelectorAll('.cell');
+  cells.forEach(cell => {
+    const x = +cell.dataset.x, y = +cell.dataset.y;
+    // Remove old overlay
+    const old = cell.querySelector('.furniture-overlay');
+    if (old) old.remove();
+    cell.classList.remove('occupied');
+
+    const item = grid[y]?.[x];
+    if (item) {
+      cell.classList.add('occupied');
+      const overlay = document.createElement('div');
+      overlay.className = 'furniture-overlay';
+      overlay.style.background = COLORS[item.type] || '#888';
+      // Only show label on origin cell
+      if (item.originX === x && item.originY === y) {
+        overlay.textContent = LABELS[item.type] || item.type.slice(0,3).toUpperCase();
+      }
+      cell.appendChild(overlay);
+    }
+  });
+  document.getElementById('item-count').textContent = `Items: ${furniture.length}`;
+  renderIso();
+}
+
+function selectTool(type) {
+  currentTool = type;
+  // Update active state on all buttons
+  document.querySelectorAll('.tool-btn').forEach(b => {
+    const btnType = b.getAttribute('onclick')?.match(/selectTool\('(.+?)'\)/)?.[1];
+    if (btnType === type) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+  // Set default size
+  if (type !== 'eraser' && DEFAULT_SIZES[type]) {
+    document.getElementById('sizeW').value = DEFAULT_SIZES[type][0];
+    document.getElementById('sizeH').value = DEFAULT_SIZES[type][1];
+  }
+}
+
+function onCellClick(x, y, e) {
+  if (currentTool === 'eraser' || e.button === 2) {
+    eraseAt(x, y);
+    return;
+  }
+  if (!currentTool) return;
+
+  // Wall decorations (window, painting) can go on border rows
+  const wallTypes = ['window', 'painting'];
+  const isWallItem = wallTypes.includes(currentTool);
+
+  // Block clicks on walls unless it's a wall decoration
+  if (!isWallItem && (y === 0 || y === H-1 || x === 0 || x === W-1)) return;
+
+  const sw = +document.getElementById('sizeW').value || 1;
+  const sh = +document.getElementById('sizeH').value || 1;
+
+  // Check bounds and overlap
+  for (let dy = 0; dy < sh; dy++) {
+    for (let dx = 0; dx < sw; dx++) {
+      const cx = x + dx, cy = y + dy;
+      if (cx >= W || cy >= H || cx < 0 || cy < 0) return; // out of bounds
+      if (!isWallItem && (cx >= W-1 || cy >= H-1 || cx < 1 || cy < 1)) return; // non-wall items stay inside
+      if (grid[cy][cx]) return; // occupied
+    }
+  }
+
+  // Place
+  saveHistory();
+  const id = genId(currentTool);
+  const entry = { id, type: currentTool, position: { x, y }, size: { width: sw, height: sh } };
+  furniture.push(entry);
+  for (let dy = 0; dy < sh; dy++) {
+    for (let dx = 0; dx < sw; dx++) {
+      grid[y + dy][x + dx] = { type: currentTool, id, originX: x, originY: y, w: sw, h: sh };
+    }
+  }
+  refreshGrid();
+}
+
+function eraseAt(x, y) {
+  const item = grid[y]?.[x];
+  if (!item) return;
+  saveHistory();
+  // Clear all cells of this item
+  for (let cy = 0; cy < H; cy++) {
+    for (let cx = 0; cx < W; cx++) {
+      if (grid[cy][cx]?.id === item.id) grid[cy][cx] = null;
+    }
+  }
+  furniture = furniture.filter(f => f.id !== item.id);
+  refreshGrid();
+}
+
+function clearAll() {
+  if (!confirm('Clear all furniture?')) return;
+  saveHistory();
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) grid[y][x] = null;
+  furniture = [];
+  refreshGrid();
+}
+
+function genId(type) {
+  if (!nextId[type]) nextId[type] = 1;
+  return `${type.replace(/_/g, '-')}-${nextId[type]++}`;
+}
+
+function saveHistory() {
+  history.push({
+    furniture: JSON.parse(JSON.stringify(furniture)),
+    grid: grid.map(row => row.map(cell => cell ? {...cell} : null)),
+  });
+  if (history.length > 50) history.shift();
+}
+
+function undoAction() {
+  if (history.length === 0) return;
+  const prev = history.pop();
+  furniture = prev.furniture;
+  grid = prev.grid;
+  refreshGrid();
+}
+
+function onCellHover(x, y, e) {
+  clearHover();
+  if (!currentTool || currentTool === 'eraser') return;
+  const isWallItem = ['window', 'painting'].includes(currentTool);
+  if (!isWallItem && (y === 0 || y === H-1 || x === 0 || x === W-1)) return;
+
+  const sw = +document.getElementById('sizeW').value || 1;
+  const sh = +document.getElementById('sizeH').value || 1;
+
+  for (let dy = 0; dy < sh; dy++) {
+    for (let dx = 0; dx < sw; dx++) {
+      const cell = document.querySelector(`.cell[data-x="${x+dx}"][data-y="${y+dy}"]`);
+      if (cell) cell.classList.add('hover-preview');
+    }
+  }
+}
+
+function clearHover() {
+  document.querySelectorAll('.hover-preview').forEach(c => c.classList.remove('hover-preview'));
+}
+
+// ── Isometric Preview ───────────────────────────────────────────
+function renderIso() {
+  const canvas = document.getElementById('iso-canvas');
+  const ctx = canvas.getContext('2d');
+  const tW = 18, tH = 9;
+  const oX = 200, oY = 20;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  function isoXY(tx, ty) {
+    return { x: (tx - ty) * tW/2 + oX, y: (tx + ty) * tH/2 + oY };
+  }
+
+  // Draw floor
+  ctx.fillStyle = '#f0ead6';
+  ctx.beginPath();
+  const tl = isoXY(0, 0), tr = isoXY(W, 0), br = isoXY(W, H), bl = isoXY(0, H);
+  ctx.moveTo(tl.x, tl.y); ctx.lineTo(tr.x, tr.y); ctx.lineTo(br.x, br.y); ctx.lineTo(bl.x, bl.y);
+  ctx.closePath(); ctx.fill();
+
+  // Draw grid lines
+  ctx.strokeStyle = '#ddd'; ctx.lineWidth = 0.3;
+  for (let x = 0; x <= W; x++) {
+    const a = isoXY(x, 0), b = isoXY(x, H);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+  for (let y = 0; y <= H; y++) {
+    const a = isoXY(0, y), b = isoXY(W, y);
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+  }
+
+  // Draw walls
+  const wallH = 60;
+  // Left wall
+  ctx.fillStyle = '#667788';
+  ctx.beginPath();
+  const wlt = isoXY(0, 0), wlb = isoXY(0, H);
+  ctx.moveTo(wlt.x, wlt.y); ctx.lineTo(wlt.x, wlt.y - wallH);
+  ctx.lineTo(wlb.x, wlb.y - wallH); ctx.lineTo(wlb.x, wlb.y);
+  ctx.closePath(); ctx.fill();
+  // Right wall
+  ctx.fillStyle = '#8899aa';
+  ctx.beginPath();
+  const wrt = isoXY(0, 0), wrr = isoXY(W, 0);
+  ctx.moveTo(wrt.x, wrt.y); ctx.lineTo(wrt.x, wrt.y - wallH);
+  ctx.lineTo(wrr.x, wrr.y - wallH); ctx.lineTo(wrr.x, wrr.y);
+  ctx.closePath(); ctx.fill();
+
+  // Draw furniture items (sorted by depth)
+  const sorted = [...furniture].sort((a, b) => {
+    const da = a.position.x + a.position.y;
+    const db = b.position.x + b.position.y;
+    return da - db;
+  });
+
+  for (const item of sorted) {
+    const { x: tx, y: ty } = item.position;
+    const sw = item.size.width, sh = item.size.height;
+    const color = COLORS[item.type] || '#888';
+
+    // Draw isometric box
+    const p1 = isoXY(tx, ty);           // top
+    const p2 = isoXY(tx + sw, ty);      // right
+    const p3 = isoXY(tx + sw, ty + sh); // bottom
+    const p4 = isoXY(tx, ty + sh);      // left
+
+    const itemH = Math.min(sw, sh) * 4 + 4; // visual height
+
+    // Top face
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y - itemH); ctx.lineTo(p2.x, p2.y - itemH);
+    ctx.lineTo(p3.x, p3.y - itemH); ctx.lineTo(p4.x, p4.y - itemH);
+    ctx.closePath(); ctx.fill();
+
+    // Front-left face
+    ctx.fillStyle = adjustColor(color, -30);
+    ctx.beginPath();
+    ctx.moveTo(p4.x, p4.y - itemH); ctx.lineTo(p3.x, p3.y - itemH);
+    ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y);
+    ctx.closePath(); ctx.fill();
+
+    // Front-right face
+    ctx.fillStyle = adjustColor(color, -60);
+    ctx.beginPath();
+    ctx.moveTo(p3.x, p3.y - itemH); ctx.lineTo(p2.x, p2.y - itemH);
+    ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y);
+    ctx.closePath(); ctx.fill();
+
+    // Label
+    const center = isoXY(tx + sw/2, ty + sh/2);
+    ctx.fillStyle = '#fff';
+    ctx.font = '7px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(LABELS[item.type] || '', center.x, center.y - itemH - 2);
+  }
+}
+
+function adjustColor(hex, amount) {
+  let r = parseInt(hex.slice(1,3), 16) + amount;
+  let g = parseInt(hex.slice(3,5), 16) + amount;
+  let b = parseInt(hex.slice(5,7), 16) + amount;
+  r = Math.max(0, Math.min(255, r));
+  g = Math.max(0, Math.min(255, g));
+  b = Math.max(0, Math.min(255, b));
+  return `rgb(${r},${g},${b})`;
+}
+
+// ── Export ───────────────────────────────────────────────────────
+function exportLayout() {
+  let code = '  const furniture: FurnitureData[] = [\n';
+  for (const item of furniture) {
+    code += `    { id: '${item.id}', type: '${item.type}', position: { x: ${item.position.x}, y: ${item.position.y} }, size: { width: ${item.size.width}, height: ${item.size.height} } },\n`;
+  }
+  code += '  ];\n';
+  document.getElementById('export-code').value = code;
+  document.getElementById('export-panel').classList.add('show');
+}
+
+function copyExport() {
+  const ta = document.getElementById('export-code');
+  ta.select();
+  navigator.clipboard.writeText(ta.value);
+  alert('Copied to clipboard!');
+}
+
+// Rotate: swap width and height
+function rotateSize() {
+  const wInput = document.getElementById('sizeW');
+  const hInput = document.getElementById('sizeH');
+  const tmp = wInput.value;
+  wInput.value = hInput.value;
+  hInput.value = tmp;
+}
+
+// Keyboard shortcut: R to rotate
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'r' || e.key === 'R') {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    rotateSize();
+  }
+});
+
+init();
+</script>
+</body>
+</html>
