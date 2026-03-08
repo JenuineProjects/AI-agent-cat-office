@@ -62,10 +62,6 @@ Cats are auto-named from the agent's system prompt. If your prompt includes patt
 
 The cat will use that name instead of a default name.
 
-### Example: Multi-Agent CV Screening
-
-The repo includes an example of 5 AI agents screening CVs for a job role, each appearing as a named cat in the office. See the `AI Agents Example/` folder for the job description, CVs, and assessment outputs.
-
 ## Project Structure
 
 ```
@@ -93,6 +89,21 @@ Key timing constants in `packages/shared/src/constants.ts`:
 - **Client:** PixiJS 8, React (toolbar), TypeScript, Vite
 - **Server:** Node.js, WebSocket (ws), TypeScript
 - **Shared:** State machine, types, constants
+
+## Asset Credits
+
+The office environment was assembled in [Sprite Fusion](https://www.spritefusion.com/) using the following asset packs:
+
+- **Office furniture & equipment** — [Donarg](https://donarg.itch.io/) (Office Tileset). Credit not required but appreciated.
+- **Walls & floors** — [Reakain](https://reakain.itch.io/walls-and-floors-tileset) (Walls and Floors Tileset)
+- **Cat furniture** (beds, bowls, cat tree, toys) — [ToffeeCraft](https://toffeecraft.itch.io/cat-pack) (Cat Pack)
+- **Cat sprites** — Multiple sources:
+  - [ToffeeCraft](https://toffeecraft.itch.io/cat-pack) (Cat Pack)
+  - [Dyru](https://dyru.itch.io/modular-pixel-cats-customizable-animated-sprite-pack) (Modular Pixel Cats)
+  - [Carysaurus](https://carysaurus.itch.io/black-cat-sprites) (Black Cat Sprites)
+  - [Carysaurus](https://carysaurus.itch.io/black-tuxedo-cat-sprites) (Black Tuxedo Cat Sprites)
+
+Please check each asset pack's license before using them in your own projects.
 
 ## License
 
