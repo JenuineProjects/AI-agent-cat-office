@@ -103,7 +103,7 @@ The office environment was assembled in [Sprite Fusion](https://www.spritefusion
   - [Carysaurus](https://carysaurus.itch.io/black-cat-sprites) (Black Cat Sprites)
   - [Carysaurus](https://carysaurus.itch.io/black-tuxedo-cat-sprites) (Black Tuxedo Cat Sprites)
 
-Please check each asset pack's license before using them in your own projects.
+**Important:** Some asset licenses restrict redistribution. If you fork or build upon this project, please download the original asset packs from the links above and check their individual licenses before using them in your own projects.
 
 ## License
 
