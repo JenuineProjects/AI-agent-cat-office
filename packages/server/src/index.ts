@@ -7,12 +7,36 @@ import { TranscriptWatcher } from './transcriptWatcher.js';
 import { CatManager } from './catManager.js';
 import { WsServer } from './wsServer.js';
 import { createDefaultOffice } from './officeLayout.js';
+import { loadAgentNames, saveAgentNames } from './agentConfig.js';
+import { CONFIG_HTML } from './configPage.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 async function main() {
   const app = express();
   const httpServer = createServer(app);
+
+  // Load agent names
+  let agentNames = await loadAgentNames();
+
+  // API routes (before static serving)
+  app.use(express.json());
+
+  app.get('/api/agent-names', (_req, res) => {
+    res.json(agentNames);
+  });
+
+  app.put('/api/agent-names', async (req, res) => {
+    agentNames = req.body;
+    await saveAgentNames(agentNames);
+    catManager.setAgentNames(agentNames);
+    console.log('[config] Agent names updated:', agentNames);
+    res.json({ ok: true });
+  });
+
+  app.get('/config', (_req, res) => {
+    res.type('html').send(CONFIG_HTML);
+  });
 
   // Serve client build
   const clientDist = join(__dirname, '..', '..', 'client', 'dist');
@@ -26,6 +50,7 @@ async function main() {
 
   // Create cat manager
   const catManager = new CatManager(office);
+  catManager.setAgentNames(agentNames);
   catManager.start();
 
   // Create WebSocket server
@@ -39,8 +64,8 @@ async function main() {
     catManager.handleToolEvent(event);
   });
 
-  watcher.on('sessionStart', (sessionId) => {
-    catManager.handleSessionStart(sessionId);
+  watcher.on('sessionStart', (sessionId, filePath) => {
+    catManager.handleSessionStart(sessionId, filePath);
   });
 
   watcher.on('error', (err) => {

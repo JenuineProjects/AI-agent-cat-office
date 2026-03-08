@@ -6,9 +6,10 @@ export const OFFICE_HEIGHT = 12;
 export const CANVAS_SCALE = 2;
 
 export const CAT_SPEED = 2; // tiles per second
-export const IDLE_SLEEP_TIMEOUT = 30 * 1000; // 30 seconds before sleeping
+export const IDLE_SLEEP_TIMEOUT = 60 * 1000; // 60 seconds before sleeping
 export const IDLE_BEHAVIOR_INTERVAL = 10 * 1000; // 10 seconds between idle checks
-export const IDLE_BEHAVIOR_CHANCE = 0.3; // lower chance — cats stay at workstations
+export const IDLE_BEHAVIOR_CHANCE = 0.15; // low chance — cats stay at workstations longer
+export const WORK_IDLE_TIMEOUT = 15 * 1000; // 15 seconds of no tool events before going idle
 
 export const WS_PORT = 3000;
 export const WS_RECONNECT_BASE_DELAY = 1000;
@@ -44,8 +45,8 @@ export const TOOL_TO_ACTION: Record<string, CatState> = {
   NotebookEdit: CatState.Typing,
   Bash: CatState.Typing,
   Read: CatState.Reading,
-  WebFetch: CatState.Reading,
-  WebSearch: CatState.Reading,
+  WebFetch: CatState.Typing,
+  WebSearch: CatState.Typing,
   Grep: CatState.Searching,
   Glob: CatState.Searching,
   Agent: CatState.Typing,
@@ -85,7 +86,7 @@ export interface FurnitureInteraction {
 export const FURNITURE_INTERACTION: Partial<Record<FurnitureType, FurnitureInteraction>> = {
   desk: { mode: 'on' },
   cat_bed: { mode: 'on' },
-  food_bowl: { mode: 'below' },
+  food_bowl: { mode: 'on' },
   cat_tree: { mode: 'below' },
   bookshelf: { mode: 'below' },
   filing_shelf: { mode: 'below' },

@@ -1,5 +1,5 @@
 import { CatState } from './types.js';
-import { IDLE_SLEEP_TIMEOUT, IDLE_BEHAVIOR_CHANCE, IDLE_BEHAVIORS } from './constants.js';
+import { IDLE_SLEEP_TIMEOUT, IDLE_BEHAVIOR_CHANCE, IDLE_BEHAVIORS, WORK_IDLE_TIMEOUT } from './constants.js';
 
 export interface StateMachineContext {
   currentState: CatState;
@@ -63,13 +63,8 @@ export function transition(
     }
 
     case 'TOOL_RESULT': {
-      if (
-        currentState === CatState.Typing ||
-        currentState === CatState.Reading ||
-        currentState === CatState.Searching
-      ) {
-        return { newState: CatState.Idle };
-      }
+      // Don't immediately go idle — let the cat keep working.
+      // IDLE_TICK will transition to idle after WORK_IDLE_TIMEOUT of inactivity.
       return null;
     }
 
@@ -84,6 +79,19 @@ export function transition(
     }
 
     case 'IDLE_TICK': {
+      // Working cats go idle after inactivity
+      if (
+        currentState === CatState.Typing ||
+        currentState === CatState.Reading ||
+        currentState === CatState.Searching
+      ) {
+        const inactiveDuration = now - ctx.lastActivityTime;
+        if (inactiveDuration >= WORK_IDLE_TIMEOUT) {
+          return { newState: CatState.Idle };
+        }
+        return null;
+      }
+
       if (currentState !== CatState.Idle) return null;
 
       const idleDuration = ctx.idleStartTime ? now - ctx.idleStartTime : 0;

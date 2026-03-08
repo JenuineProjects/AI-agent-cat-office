@@ -59,7 +59,7 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-const NUM_CATS = 6;
+const NUM_CATS = 10;
 
 async function main() {
   await mkdir(demoDir, { recursive: true });

@@ -11,14 +11,19 @@ import {
 import { getCatFrames, getCatFrameSize } from '../assets/AssetLoader.js';
 import { isoProject, isoDepth } from '../utils/isoUtils.js';
 
-const STATE_COLORS: Partial<Record<CatState, number>> = {
-  [CatState.Typing]: 0x88ff88,
-  [CatState.Reading]: 0x88aaff,
-  [CatState.Searching]: 0xffaa44,
-  [CatState.Sleeping]: 0x8888aa,
-  [CatState.Playing]: 0xff66ff,
-  [CatState.Eating]: 0xffdd44,
-};
+// Identity colours to distinguish cats — matches taskbar dot
+const IDENTITY_COLORS: number[] = [
+  0x4488ff, // blue
+  0xff4444, // red
+  0x44cc44, // green
+  0x222222, // black
+  0xaa44ff, // purple
+  0xff66aa, // pink
+  0xff8800, // orange
+  0x00cccc, // teal
+  0xdddd00, // yellow
+  0xff44ff, // magenta
+];
 
 const STATE_LABELS: Record<CatState, string> = {
   [CatState.Idle]: 'Idle',
@@ -32,7 +37,7 @@ const STATE_LABELS: Record<CatState, string> = {
 };
 
 const STATE_PIXEL_OFFSETS: Partial<Record<CatState, { dx: number; dy: number }>> = {
-  [CatState.Sleeping]: { dx: 4, dy: 4 },
+  [CatState.Sleeping]: { dx: 8, dy: 6 },
   [CatState.Eating]: { dx: 0, dy: -2 },
   [CatState.Playing]: { dx: 0, dy: -4 },
 };
@@ -47,6 +52,7 @@ export class CatSprite {
   readonly name: string;
   readonly skin: CatSkin;
   readonly sessionId: string;
+  readonly catIndex: number;
   currentState: CatState;
   private direction: Direction = 'down';
 
@@ -76,6 +82,10 @@ export class CatSprite {
   private speechBubbleTimer = 0;
   private _waitingForInput = false;
 
+  /** Zzz animation for sleeping */
+  private zzzText: Text;
+  private zzzTimer = 0;
+
   /** Callback for click events */
   onSelect: ((catId: string) => void) | null = null;
 
@@ -84,6 +94,7 @@ export class CatSprite {
     this.name = data.name;
     this.skin = data.skin;
     this.sessionId = data.sessionId;
+    this.catIndex = data.catIndex;
     this.currentState = data.state;
     this.direction = data.direction;
     this.nativeSize = getCatFrameSize(data.skin);
@@ -125,7 +136,7 @@ export class CatSprite {
     this.nameLabel.visible = false;
     const labelStyle = new TextStyle({
       fontFamily: 'monospace',
-      fontSize: 20,
+      fontSize: 12,
       fill: 0xffffff,
       align: 'center',
       fontWeight: 'bold',
@@ -159,6 +170,14 @@ export class CatSprite {
     this.speechBubble.addChild(dotsText);
     this.speechBubble.position.set(8, -6);
     this.container.addChild(this.speechBubble);
+
+    // Zzz text for sleeping
+    const zzzStyle = new TextStyle({ fontFamily: 'monospace', fontSize: 10, fill: 0xffffff, fontWeight: 'bold' });
+    this.zzzText = new Text({ text: 'Zzz', style: zzzStyle });
+    this.zzzText.anchor.set(0.5, 1);
+    this.zzzText.position.set(14, -2);
+    this.zzzText.visible = false;
+    this.container.addChild(this.zzzText);
 
     // Click handler
     this.container.eventMode = 'static';
@@ -285,6 +304,19 @@ export class CatSprite {
       this.speechBubbleTimer += deltaMs;
       this.speechBubble.position.y = -4 + Math.sin(this.speechBubbleTimer / 400) * 1.5;
     }
+
+    // Zzz floating animation
+    if (this.currentState === CatState.Sleeping) {
+      this.zzzTimer += deltaMs;
+      this.zzzText.visible = true;
+      // Float upward and fade, then reset
+      const cycle = (this.zzzTimer % 2000) / 2000; // 0→1 over 2 seconds
+      this.zzzText.position.y = -4 - cycle * 10;
+      this.zzzText.alpha = 1 - cycle * 0.7;
+    } else {
+      this.zzzText.visible = false;
+      this.zzzTimer = 0;
+    }
   }
 
   /** Flip sprite horizontally based on direction. Side-view sheets face right by default. */
@@ -309,14 +341,11 @@ export class CatSprite {
   }
 
   private updateStateIndicator(): void {
-    const color = STATE_COLORS[this.currentState];
+    const color = IDENTITY_COLORS[this.catIndex % IDENTITY_COLORS.length];
     this.stateDot.clear();
-    if (color != null) {
-      this.stateDot.circle(8, -1, 1.5);
-      this.stateDot.fill(color);
-      this.stateDot.visible = true;
-    } else {
-      this.stateDot.visible = false;
-    }
+    this.stateDot.circle(8, -1, 2.5);
+    this.stateDot.fill(color);
+    this.stateDot.stroke({ color: 0xffffff, width: 0.5 });
+    this.stateDot.visible = true;
   }
 }

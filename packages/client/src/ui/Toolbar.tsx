@@ -9,18 +9,19 @@ interface ToolbarProps {
   scene: OfficeScene;
 }
 
-const SKIN_COLORS: Record<string, string> = {
-  tabby: '#c8a060',
-  black: '#333333',
-  white: '#eeeeee',
-  ginger: '#e8943a',
-  tuxedo: '#1a1a1a',
-  grey: '#999999',
-  calico: '#d4a86a',
-  siamese: '#d2c0a0',
-  tortoiseshell: '#8b5e3c',
-  mackerel: '#7a8a7a',
-};
+// Identity colours to distinguish cats — matches the dot over their heads
+const IDENTITY_COLORS: string[] = [
+  '#4488ff', // blue
+  '#ff4444', // red
+  '#44cc44', // green
+  '#222222', // black
+  '#aa44ff', // purple
+  '#ff66aa', // pink
+  '#ff8800', // orange
+  '#00cccc', // teal
+  '#dddd00', // yellow
+  '#ff44ff', // magenta
+];
 
 const STATE_LABELS: Record<CatState, string> = {
   [CatState.Idle]: 'Idle',
@@ -59,7 +60,7 @@ function CatChip({ cat }: { cat: CatInfo }) {
         width: '12px',
         height: '12px',
         borderRadius: '50%',
-        background: SKIN_COLORS[cat.skin] ?? '#888',
+        background: IDENTITY_COLORS[cat.catIndex % IDENTITY_COLORS.length],
         border: '2px solid rgba(255,255,255,0.3)',
         flexShrink: 0,
       }} />
@@ -111,74 +112,70 @@ function Toolbar({ wsClient, scene }: ToolbarProps) {
   };
 
   return (
-    <>
-      {/* Top bar — agent chips */}
-      {cats.length > 0 && (
-        <div style={{
-          position: 'absolute',
-          top: '-55px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          gap: '8px',
-          flexWrap: 'wrap',
-          justifyContent: 'center',
-          maxWidth: 'calc(100% - 24px)',
-          background: 'rgba(0, 0, 0, 0.75)',
-          borderRadius: '12px',
-          padding: '8px 16px',
-          fontFamily: 'monospace',
-          backdropFilter: 'blur(6px)',
-        }}>
-          {cats.map(cat => <CatChip key={cat.id} cat={cat} />)}
-        </div>
-      )}
-
-      {/* Bottom toolbar */}
       <div style={{
-        position: 'absolute',
-        bottom: '16px',
+        position: 'fixed',
+        top: '10px',
         left: '50%',
         transform: 'translateX(-50%)',
+        zIndex: 1000,
         display: 'flex',
-        gap: '8px',
+        flexDirection: 'column',
         alignItems: 'center',
-        background: 'rgba(0, 0, 0, 0.7)',
-        borderRadius: '8px',
+        gap: '6px',
+        maxWidth: 'calc(100% - 24px)',
+        background: 'rgba(0, 0, 0, 0.75)',
+        borderRadius: '12px',
         padding: '8px 16px',
         fontFamily: 'monospace',
-        fontSize: '13px',
-        color: '#ddd',
-        backdropFilter: 'blur(4px)',
+        backdropFilter: 'blur(6px)',
       }}>
-        <span style={{
-          width: '8px',
-          height: '8px',
-          borderRadius: '50%',
-          background: connected ? '#88ff88' : '#ff4444',
-          display: 'inline-block',
-        }} />
-        <span>{connected ? 'Connected' : 'Disconnected'}</span>
-        <span style={{ color: '#888' }}>|</span>
-        <span>Cats: {catCount}</span>
-        <span style={{ color: '#888' }}>|</span>
-        <button
-          onClick={handleScreenshot}
-          style={{
-            background: '#444',
-            border: '1px solid #666',
-            color: '#ddd',
-            padding: '4px 8px',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontFamily: 'monospace',
-            fontSize: '12px',
-          }}
-        >
-          Screenshot
-        </button>
+        {/* Agent chips */}
+        {cats.length > 0 && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: cats.length === 1 ? '1fr' : '1fr 1fr',
+            gap: '8px',
+          }}>
+            {cats.map(cat => <CatChip key={cat.id} cat={cat} />)}
+          </div>
+        )}
+
+        {/* Status bar */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          alignItems: 'center',
+          fontSize: '13px',
+          color: '#ddd',
+        }}>
+          <span style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: connected ? '#88ff88' : '#ff4444',
+            display: 'inline-block',
+          }} />
+          <span>{connected ? 'Connected' : 'Disconnected'}</span>
+          <span style={{ color: '#888' }}>|</span>
+          <span>Cats: {catCount}</span>
+          <span style={{ color: '#888' }}>|</span>
+          <button
+            onClick={handleScreenshot}
+            style={{
+              background: '#444',
+              border: '1px solid #666',
+              color: '#ddd',
+              padding: '4px 8px',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontFamily: 'monospace',
+              fontSize: '12px',
+            }}
+          >
+            Screenshot
+          </button>
+        </div>
       </div>
-    </>
   );
 }
 

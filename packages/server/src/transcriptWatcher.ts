@@ -133,7 +133,7 @@ export class TranscriptWatcher extends EventEmitter<TranscriptWatcherEvents> {
         const trimmed = line.trim();
         if (!trimmed) continue;
 
-        const event = parseJsonlLine(trimmed, sessionId);
+        const event = parseJsonlLine(trimmed, sessionId, filePath);
         if (event) {
           this.emit('toolEvent', event);
         }

@@ -15,7 +15,7 @@ interface JsonlMessage {
   tool_use_id?: string;
 }
 
-export function parseJsonlLine(line: string, sessionId: string): ToolEvent | null {
+export function parseJsonlLine(line: string, sessionId: string, filePath?: string): ToolEvent | null {
   try {
     const data = JSON.parse(line) as JsonlMessage;
 
@@ -28,6 +28,7 @@ export function parseJsonlLine(line: string, sessionId: string): ToolEvent | nul
             toolName: block.name,
             sessionId,
             timestamp: Date.now(),
+            filePath,
           };
         }
         if (block.type === 'tool_result') {
@@ -36,6 +37,7 @@ export function parseJsonlLine(line: string, sessionId: string): ToolEvent | nul
             toolName: '',
             sessionId,
             timestamp: Date.now(),
+            filePath,
           };
         }
       }
@@ -48,6 +50,7 @@ export function parseJsonlLine(line: string, sessionId: string): ToolEvent | nul
         toolName: data.tool_name,
         sessionId,
         timestamp: Date.now(),
+        filePath,
       };
     }
 
@@ -57,6 +60,7 @@ export function parseJsonlLine(line: string, sessionId: string): ToolEvent | nul
         toolName: '',
         sessionId,
         timestamp: Date.now(),
+        filePath,
       };
     }
   } catch {

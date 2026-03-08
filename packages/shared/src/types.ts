@@ -37,6 +37,7 @@ export interface CatData {
   direction: Direction;
   targetPosition: Position | null;
   sessionId: string;
+  catIndex: number;
   lastActivityTime: number;
   waitingForInput?: boolean;
 }
@@ -59,6 +60,7 @@ export interface ToolEvent {
   toolName: ToolName | string;
   sessionId: string;
   timestamp: number;
+  filePath?: string;
 }
 
 export type FurnitureType =

@@ -41,11 +41,11 @@ export class CatAgent {
   private office: OfficeLayout;
 
   /** Minimum ms between state changes to prevent flashing */
-  private static STATE_CHANGE_COOLDOWN = 5000;
+  private static STATE_CHANGE_COOLDOWN = 2000;
 
-  constructor(sessionId: string, office: OfficeLayout, catIndex: number, spawnPos?: Position) {
+  constructor(sessionId: string, office: OfficeLayout, catIndex: number, spawnPos?: Position, customName?: string) {
     this.id = `cat-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-    this.name = CAT_NAMES[catIndex % CAT_NAMES.length];
+    this.name = customName ?? CAT_NAMES[catIndex % CAT_NAMES.length];
     this.skin = CAT_SKINS[catIndex % CAT_SKINS.length];
     this.sessionId = sessionId;
     this.office = office;
@@ -55,6 +55,11 @@ export class CatAgent {
     // Start at assigned position or center
     this.position = spawnPos ?? { x: Math.floor(office.width / 2), y: Math.floor(office.height / 2) };
   }
+
+  /** Set of "x,y" strings for tiles occupied or targeted by other cats */
+  occupiedTiles = new Set<string>();
+  /** Set of furniture IDs currently assigned to other cats, keyed by type */
+  occupiedFurniture = new Map<string, Set<string>>();
 
   handleEvent(event: TransitionEvent): boolean {
     const ctx: StateMachineContext = {
@@ -111,18 +116,28 @@ export class CatAgent {
             const snapTile = interaction.offset
               ? { x: target.position.x + interaction.offset.dx, y: target.position.y + interaction.offset.dy }
               : { x: target.position.x, y: target.position.y };
+            // If snap tile is occupied, stay idle instead of stacking
+            if (this.occupiedTiles.has(`${snapTile.x},${snapTile.y}`)) {
+              console.log(`[${this.name}] snap tile (${snapTile.x},${snapTile.y}) occupied, staying idle`);
+              this.state = CatState.Idle;
+              this.idleStartTime = Date.now();
+              this.targetAction = null;
+              this.targetPosition = null;
+              this.snapPosition = null;
+              return prevState !== this.state;
+            }
             this.snapPosition = snapTile;
-            const walkTarget = this.findAdjacentWalkable(snapTile);
+            const walkTarget = this.findAdjacentWalkableUnoccupied(snapTile) ?? this.findAdjacentWalkable(snapTile);
             this.targetPosition = walkTarget ?? this.randomWalkablePosition();
             console.log(`[${this.name}] mode:on → snap=(${snapTile.x},${snapTile.y}) walkTo=(${this.targetPosition.x},${this.targetPosition.y}) furniture=${target.id} from=(${this.position.x},${this.position.y})`);
           } else {
-            // mode 'below' — walk to tile below furniture
+            // mode 'below' — walk to tile below furniture, avoiding occupied tiles
             const belowTile = { x: target.position.x, y: target.position.y + target.size.height };
-            if (this.office.walkable[belowTile.y]?.[belowTile.x]) {
+            if (this.office.walkable[belowTile.y]?.[belowTile.x] && !this.occupiedTiles.has(`${belowTile.x},${belowTile.y}`)) {
               this.targetPosition = belowTile;
             } else {
-              // Below tile blocked — find nearest walkable adjacent to furniture
-              this.targetPosition = this.findAdjacentWalkable(belowTile) ?? this.randomWalkablePosition();
+              // Primary tile occupied/blocked — find unoccupied walkable tile near the below tile
+              this.targetPosition = this.findAdjacentWalkableUnoccupied(belowTile) ?? this.randomWalkablePosition();
             }
             console.log(`[${this.name}] mode:below → target=(${this.targetPosition.x},${this.targetPosition.y}) furniture=${target.id}`);
           }
@@ -164,23 +179,53 @@ export class CatAgent {
     this.path = [];
   }
 
-  /** Get the assigned furniture for this cat, or fall back to round-robin by catIndex. */
+  /** Get the assigned furniture for this cat, preferring unoccupied pieces. */
   private findAssignedFurniture(type: string): FurnitureData | null {
-    // Check if we already have an assignment
+    // Check if we already have an assignment that's not occupied by another cat
     const assignedId = this.assignedFurniture.get(type);
     if (assignedId) {
-      const f = this.office.furniture.find((f) => f.id === assignedId);
-      if (f) return f;
+      const usedByOthers = this.occupiedFurniture.get(type);
+      if (!usedByOthers?.has(assignedId)) {
+        const f = this.office.furniture.find((f) => f.id === assignedId);
+        if (f) return f;
+      }
+      // Our assignment is taken by someone else, clear it so we pick a new one
+      this.assignedFurniture.delete(type);
     }
 
     // Find all furniture of this type
     const candidates = this.office.furniture.filter((f) => f.type === type);
     if (candidates.length === 0) return null;
 
-    // Round-robin: pick based on catIndex so each cat gets a different one
-    const pick = candidates[this.catIndex % candidates.length];
+    // Prefer unoccupied furniture
+    const usedByOthers = this.occupiedFurniture.get(type) ?? new Set();
+    const free = candidates.filter((f) => !usedByOthers.has(f.id));
+    const pick = free.length > 0
+      ? free[this.catIndex % free.length]
+      : candidates[this.catIndex % candidates.length];
     this.assignedFurniture.set(type, pick.id);
     return pick;
+  }
+
+  private findAdjacentWalkableUnoccupied(target: Position): Position | null {
+    const dirs = [
+      { x: 0, y: 1 }, { x: 0, y: -1 }, { x: 1, y: 0 }, { x: -1, y: 0 },
+      { x: 1, y: 1 }, { x: -1, y: 1 }, { x: 1, y: -1 }, { x: -1, y: -1 },
+    ];
+    let best: Position | null = null;
+    let bestDist = Infinity;
+    for (const d of dirs) {
+      const nx = target.x + d.x;
+      const ny = target.y + d.y;
+      if (this.office.walkable[ny]?.[nx] && !this.occupiedTiles.has(`${nx},${ny}`)) {
+        const dist = Math.abs(nx - this.position.x) + Math.abs(ny - this.position.y);
+        if (dist < bestDist) {
+          bestDist = dist;
+          best = { x: nx, y: ny };
+        }
+      }
+    }
+    return best;
   }
 
   private findAdjacentWalkable(target: Position): Position | null {
@@ -233,6 +278,7 @@ export class CatAgent {
       direction: this.direction,
       targetPosition: this.targetPosition ? { ...this.targetPosition } : null,
       sessionId: this.sessionId,
+      catIndex: this.catIndex,
       lastActivityTime: this.lastActivityTime,
       waitingForInput: this.waitingForInput,
     };

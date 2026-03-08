@@ -10,6 +10,7 @@ import {
 import { CatAgent } from './catAgent.js';
 import { toolEventToAction } from './transcriptParser.js';
 import { bfsPath } from './pathfinding.js';
+import { detectRoleFromFile } from './roleDetector.js';
 
 export interface CatManagerEvents {
   message: [msg: ServerMessage];
@@ -19,12 +20,17 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
   private cats = new Map<string, CatAgent>();
   private sessionToCat = new Map<string, string>();
   private office: OfficeLayout;
+  private agentNames: string[] = [];
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private moveInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(office: OfficeLayout) {
     super();
     this.office = office;
+  }
+
+  setAgentNames(names: string[]): void {
+    this.agentNames = names;
   }
 
   start(): void {
@@ -39,16 +45,17 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
     if (this.moveInterval) clearInterval(this.moveInterval);
   }
 
-  handleToolEvent(event: ToolEvent): void {
+  async handleToolEvent(event: ToolEvent): Promise<void> {
     let cat = this.getCatBySession(event.sessionId);
 
     if (!cat) {
-      cat = this.spawnCat(event.sessionId);
+      cat = await this.spawnCat(event.sessionId, event.filePath);
     }
 
     if (event.type === 'tool_use') {
       const action = toolEventToAction(event);
       if (action) {
+        this.updateOccupiedTiles(cat);
         const changed = cat.handleEvent({ type: 'TOOL_USE', toolAction: action });
         if (changed) {
           this.computePath(cat);
@@ -63,10 +70,10 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
     }
   }
 
-  handleSessionStart(sessionId: string): void {
+  async handleSessionStart(sessionId: string, filePath?: string): Promise<void> {
     let cat = this.getCatBySession(sessionId);
     if (!cat) {
-      this.spawnCat(sessionId);
+      await this.spawnCat(sessionId, filePath);
     } else {
       const changed = cat.handleEvent({ type: 'NEW_SESSION' });
       if (changed) this.broadcastStateChange(cat);
@@ -81,8 +88,18 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
     };
   }
 
-  private spawnCat(sessionId: string): CatAgent {
+  private async spawnCat(sessionId: string, filePath?: string): Promise<CatAgent> {
     const catIndex = this.cats.size;
+
+    // Priority: 1) config page name, 2) auto-detected role, 3) default cat name
+    let customName = this.agentNames[catIndex] || undefined;
+    if (!customName && filePath) {
+      const detected = await detectRoleFromFile(filePath);
+      if (detected) {
+        customName = detected;
+        console.log(`[catManager] Auto-detected role: "${detected}" from transcript`);
+      }
+    }
 
     // Find desks and chairs
     const desks = this.office.furniture.filter((f) => f.type === 'desk');
@@ -140,7 +157,7 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
       }
     }
 
-    const cat = new CatAgent(sessionId, this.office, catIndex, spawnPos);
+    const cat = new CatAgent(sessionId, this.office, catIndex, spawnPos, customName);
 
     // Pre-assign desk and chair so each cat goes to their own
     if (availableDesk) cat.assignedFurniture.set('desk', availableDesk.id);
@@ -221,6 +238,7 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
 
   private idleTick(): void {
     for (const cat of this.cats.values()) {
+      this.updateOccupiedTiles(cat);
       const changed = cat.handleEvent({ type: 'IDLE_TICK' });
       if (changed) {
         this.computePath(cat);
@@ -235,6 +253,28 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
         if (!changed) this.broadcastStateChange(cat); // broadcast if not already sent
       }
     }
+  }
+
+  private updateOccupiedTiles(cat: CatAgent): void {
+    const occupied = new Set<string>();
+    const furnitureByType = new Map<string, Set<string>>();
+    for (const other of this.cats.values()) {
+      if (other.id === cat.id) continue;
+      occupied.add(`${other.position.x},${other.position.y}`);
+      if (other.targetPosition) {
+        occupied.add(`${other.targetPosition.x},${other.targetPosition.y}`);
+      }
+      // Track which furniture is currently in use by other cats
+      for (const [type, furnitureId] of other.assignedFurniture) {
+        // Only count as occupied if the cat is actively using it (not idle/walking)
+        if (other.state !== CatState.Idle && other.state !== CatState.Walking) {
+          if (!furnitureByType.has(type)) furnitureByType.set(type, new Set());
+          furnitureByType.get(type)!.add(furnitureId);
+        }
+      }
+    }
+    cat.occupiedTiles = occupied;
+    cat.occupiedFurniture = furnitureByType;
   }
 
   private broadcastStateChange(cat: CatAgent): void {

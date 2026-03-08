@@ -17,6 +17,7 @@ export interface CatInfo {
   skin: CatSkin;
   state: CatState;
   sessionId: string;
+  catIndex: number;
 }
 
 export class OfficeScene {
@@ -127,7 +128,7 @@ export class OfficeScene {
   getCatsInfo(): CatInfo[] {
     const infos: CatInfo[] = [];
     for (const cat of this.cats.values()) {
-      infos.push({ id: cat.id, name: cat.name, skin: cat.skin, state: cat.currentState, sessionId: cat.sessionId });
+      infos.push({ id: cat.id, name: cat.name, skin: cat.skin, state: cat.currentState, sessionId: cat.sessionId, catIndex: cat.catIndex });
     }
     return infos;
   }

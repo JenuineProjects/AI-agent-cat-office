@@ -64,10 +64,9 @@ export function createDefaultOffice(): OfficeLayout {
     // ── Scratching post (right wall, x:18, y:5-7) ──
     { id: 'scratching-post-1', type: 'scratching_post', position: { x: 18, y: 5 }, size: { width: 1, height: 3 } },
 
-    // ── Food bowls (cat zone) ──
-    { id: 'food-bowl-1', type: 'food_bowl', position: { x: 13, y: 6 }, size: { width: 1, height: 1 } },
-    { id: 'food-bowl-2', type: 'food_bowl', position: { x: 15, y: 8 }, size: { width: 1, height: 1 } },
-    { id: 'food-bowl-3', type: 'food_bowl', position: { x: 14, y: 5 }, size: { width: 1, height: 1 } },
+    // ── Food bowls (right side of cat zone, next to wall) ──
+    { id: 'food-bowl-1', type: 'food_bowl', position: { x: 17, y: 5 }, size: { width: 1, height: 1 } },
+    { id: 'food-bowl-2', type: 'food_bowl', position: { x: 17, y: 7 }, size: { width: 1, height: 1 } },
 
     // ── Computer station (bottom-right) ──
     { id: 'monitor-1', type: 'monitor', position: { x: 17, y: 8 }, size: { width: 2, height: 4 } },
