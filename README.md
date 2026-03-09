@@ -27,7 +27,7 @@ Cats walk to the correct furniture, perform their action with animated sprites, 
 ### Install & Run
 
 ```bash
-git clone https://github.com/Jen-Builds/AI-agent-cat-office.git
+git clone https://github.com/JenuineProjects/AI-agent-cat-office.git
 cd AI-agent-cat-office
 npm install
 npm run build

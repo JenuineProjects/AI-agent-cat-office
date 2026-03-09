@@ -23,6 +23,8 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
   private agentNames: string[] = [];
   private tickInterval: ReturnType<typeof setInterval> | null = null;
   private moveInterval: ReturnType<typeof setInterval> | null = null;
+  private nextCatIndex = 0;
+  private spawnQueue: Promise<void> = Promise.resolve();
 
   constructor(office: OfficeLayout) {
     super();
@@ -49,7 +51,7 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
     let cat = this.getCatBySession(event.sessionId);
 
     if (!cat) {
-      cat = await this.spawnCat(event.sessionId, event.filePath);
+      cat = await this.spawnCatQueued(event.sessionId, event.filePath);
     }
 
     if (event.type === 'tool_use') {
@@ -73,7 +75,7 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
   async handleSessionStart(sessionId: string, filePath?: string): Promise<void> {
     let cat = this.getCatBySession(sessionId);
     if (!cat) {
-      await this.spawnCat(sessionId, filePath);
+      await this.spawnCatQueued(sessionId, filePath);
     } else {
       const changed = cat.handleEvent({ type: 'NEW_SESSION' });
       if (changed) this.broadcastStateChange(cat);
@@ -88,8 +90,15 @@ export class CatManager extends EventEmitter<CatManagerEvents> {
     };
   }
 
+  private spawnCatQueued(sessionId: string, filePath?: string): Promise<CatAgent> {
+    // Serialize spawns to prevent race conditions with async role detection
+    const result = this.spawnQueue.then(() => this.spawnCat(sessionId, filePath));
+    this.spawnQueue = result.then(() => {}, () => {});
+    return result;
+  }
+
   private async spawnCat(sessionId: string, filePath?: string): Promise<CatAgent> {
-    const catIndex = this.cats.size;
+    const catIndex = this.nextCatIndex++;
 
     // Priority: 1) config page name, 2) auto-detected role, 3) default cat name
     let customName = this.agentNames[catIndex] || undefined;

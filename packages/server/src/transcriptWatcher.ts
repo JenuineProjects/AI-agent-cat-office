@@ -96,7 +96,15 @@ export class TranscriptWatcher extends EventEmitter<TranscriptWatcherEvents> {
     return filename.replace('.jsonl', '');
   }
 
+  private isOwnProject(filePath: string): boolean {
+    const normalized = filePath.replace(/\\/g, '/').toLowerCase();
+    return normalized.includes('aiagentsanimation');
+  }
+
   private async handleFileEvent(filePath: string): Promise<void> {
+    // Ignore JSONL files from our own project to avoid self-spawning cats
+    if (this.isOwnProject(filePath)) return;
+
     const isNew = !this.knownFiles.has(filePath);
 
     if (isNew) {
