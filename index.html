@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agent Cat Office - Project Report</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #222240;
+      --accent: #7c6fe0;
+      --accent-light: #a99ef5;
+      --text: #e8e6f0;
+      --text-muted: #9896a8;
+      --cat-orange: #e8943a;
+      --cat-dark: #3a2a1a;
+      --border: #2e2e4a;
+      --glow: rgba(124, 111, 224, 0.15);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 24px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -200px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, var(--glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: var(--accent-light);
+      font-weight: 500;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, var(--text) 0%, var(--accent-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero h1 .paw {
+      -webkit-text-fill-color: var(--cat-orange);
+      font-size: 0.8em;
+    }
+
+    .hero-sub {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin-bottom: 40px;
+      font-weight: 300;
+    }
+
+    .hero-img {
+      width: min(700px, 90vw);
+      border-radius: 16px;
+      border: 2px solid var(--border);
+      box-shadow: 0 20px 80px rgba(0,0,0,0.5);
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-light);
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--accent);
+    }
+
+    .btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+    }
+
+    /* ─── Sections ─── */
+    .section {
+      max-width: 840px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+    }
+
+    .section h2 {
+      font-size: clamp(1.8rem, 4vw, 2.4rem);
+      font-weight: 600;
+      margin-bottom: 24px;
+      line-height: 1.3;
+    }
+
+    .section p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 20px;
+    }
+
+    .section p strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .divider {
+      width: 60px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin: 0 auto 80px;
+      opacity: 0.5;
+    }
+
+    /* ─── Inspiration card ─── */
+    .inspiration-card {
+      display: flex;
+      gap: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 32px 0;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .inspiration-card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 30px var(--glow);
+    }
+
+    .inspiration-card .icon {
+      width: 56px;
+      height: 56px;
+      background: var(--surface2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      flex-shrink: 0;
+    }
+
+    .inspiration-card .card-text {
+      flex: 1;
+    }
+
+    .inspiration-card .card-title {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .inspiration-card .card-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .inspiration-card .arrow {
+      font-size: 1.2rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    /* ─── Cat photo ─── */
+    .cat-photo-container {
+      position: relative;
+      margin: 36px 0;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+    }
+
+    .cat-photo-container img {
+      width: 100%;
+      display: block;
+    }
+
+    .cat-photo-caption {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 24px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .cat-photo-caption strong {
+      font-size: 1.1rem;
+    }
+
+    /* ─── Tech grid ─── */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+
+    .tech-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .tech-card .tech-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 500;
+      font-size: 0.95rem;
+      margin-bottom: 6px;
+    }
+
+    .tech-card .tech-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* ─── Challenges callout ─── */
+    .callout {
+      background: var(--surface);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 12px 12px 0;
+      padding: 24px 28px;
+      margin: 32px 0;
+    }
+
+    .callout p {
+      margin-bottom: 0;
+    }
+
+    /* ─── Learnings list ─── */
+    .learnings-list {
+      list-style: none;
+      margin: 24px 0;
+    }
+
+    .learnings-list li {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .learnings-list li:last-child {
+      border-bottom: none;
+    }
+
+    .learnings-list .num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--accent);
+      background: var(--surface2);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .learnings-list .learn-text {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .learnings-list .learn-text strong {
+      color: var(--text);
+    }
+
+    /* ─── Slideshow ─── */
+    .slideshow-section {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+
+    .slideshow {
+      position: relative;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-top: 32px;
+    }
+
+    .slideshow-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    .slideshow-viewport img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .slideshow-viewport img.active {
+      opacity: 1;
+    }
+
+    .slideshow-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+    }
+
+    .slide-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .slide-btn:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .slide-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .slide-btn:disabled:hover {
+      background: var(--surface2);
+      border-color: var(--border);
+    }
+
+    .slide-info {
+      text-align: center;
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .slide-caption {
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-top: 4px;
+    }
+
+    .slide-dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .slide-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+      padding: 0;
+    }
+
+    .slide-dot.active {
+      background: var(--accent);
+      transform: scale(1.3);
+    }
+
+    .slide-dot:hover {
+      background: var(--accent-light);
+    }
+
+    /* ─── Behaviour table ─── */
+    .behaviour-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      margin: 32px 0;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .behaviour-table thead {
+      background: var(--surface2);
+    }
+
+    .behaviour-table th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--accent-light);
+      padding: 14px 20px;
+      text-align: left;
+      font-weight: 500;
+    }
+
+    .behaviour-table td {
+      padding: 12px 20px;
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      border-top: 1px solid var(--border);
+    }
+
+    .behaviour-table tbody tr:hover {
+      background: var(--surface);
+    }
+
+    .behaviour-table td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .behaviour-table td strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* ─── Credits ─── */
+    .credits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 32px 0;
+    }
+
+    .credit-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      transition: border-color 0.3s;
+    }
+
+    .credit-card:hover {
+      border-color: var(--accent);
+    }
+
+    .credit-card .credit-category {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .credit-card .credit-name {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .credit-card .credit-name a {
+      color: var(--text);
+      text-decoration: none;
+      border-bottom: 1px solid var(--border);
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .credit-card .credit-name a:hover {
+      color: var(--accent-light);
+      border-color: var(--accent-light);
+    }
+
+    .credit-card .credit-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      max-width: 840px;
+      margin: 0 auto;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 600px) {
+      .inspiration-card {
+        flex-direction: column;
+        text-align: center;
+      }
+      .tech-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Hero ─── -->
+  <section class="hero">
+    <span class="hero-badge">Personal Project Report</span>
+    <h1>AI Agent Cat Office <span class="paw">&#128062;</span></h1>
+    <p class="hero-sub">A pixel-art office where AI agent cats visualise real-time Claude Code activity — coding, reading files, searching, and more.</p>
+    <img class="hero-img" src="Examples/Office Evolution/13.png" alt="Cat Office final screenshot" />
+    <div class="hero-buttons">
+      <a class="btn btn-primary" href="https://github.com/JenuineProjects/AI-agent-cat-office" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Download &amp; Install
+      </a>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── 1. Inspiration ─── -->
+  <section class="section">
+    <p class="section-label">01 — Inspiration</p>
+    <h2>Where it all started</h2>
+    <p>
+      A classmate showed me a Reddit post showcasing a VS Code extension that turned coding agents into
+      animated pixel-art characters. I thought it was such a cool idea that I decided to put my own twist
+      on it — having the AI agents represented as cats, inspired by my own two cats (pictured below).
+    </p>
+    <a class="inspiration-card" href="https://www.reddit.com/r/SideProject/comments/1rbs6e1/i_built_a_vs_code_extension_that_turns_your/" target="_blank" rel="noopener">
+      <div class="icon">&#127918;</div>
+      <div class="card-text">
+        <div class="card-title">Reddit — r/SideProject</div>
+        <p class="card-desc">"I built a VS Code extension that turns your coding agents into animated characters"</p>
+      </div>
+      <span class="arrow">&#8599;</span>
+    </a>
+  </section>
+
+  <!-- ─── 2. Motivation ─── -->
+  <section class="section">
+    <p class="section-label">02 — Motivation</p>
+    <h2>A cat lover's take on AI visualisation</h2>
+    <p>
+      Being a cat lover with <strong>two cats of my own</strong>, I wanted to put a personal twist on the idea.
+      I don't consider myself a particularly technical person, so while working with AI agents, I really enjoy
+      being able to <strong>visually see what they're doing</strong> rather than just reading log output.
+    </p>
+    <p>
+      The concept was simple: what if each Claude Code agent was represented as a cat in a cosy pixel-art
+      office? When an agent writes code, its cat sits at a desk typing. When it reads files, the cat is at the
+      bookshelf. When it searches, it wanders around exploring.
+    </p>
+    <div class="cat-photo-container">
+      <img src="KitkatAndCoco.png" alt="Kitkat and Coco — the real cats behind the project" />
+      <div class="cat-photo-caption">
+        <strong>Kitkat &amp; Coco</strong> — the real-life inspiration behind the project.
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── 3. The approach ─── -->
+  <section class="section">
+    <p class="section-label">03 — The Approach</p>
+    <h2>Starting a conversation with Claude</h2>
+    <p>
+      The first step was <strong>having a conversation with Claude</strong> about how to architect the project.
+      Together we mapped out the idea: a monorepo with a shared package for types and a finite state machine,
+      a server that watches Claude Code's JSONL activity logs, and a PixiJS client to render everything.
+    </p>
+
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-name">PixiJS v8</div>
+        <p class="tech-desc">2D WebGL renderer for the animated office and cat sprites</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Express + WebSocket</div>
+        <p class="tech-desc">Real-time server pushing agent state changes to the browser</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Chokidar</div>
+        <p class="tech-desc">File watcher monitoring Claude Code JSONL activity logs</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">React + Vite</div>
+        <p class="tech-desc">UI overlay toolbar for connection status and agent info</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Sprite Fusion</div>
+        <p class="tech-desc">Tilemap editor used to design the office layout</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-name">Finite State Machine</div>
+        <p class="tech-desc">Pure FSM mapping agent actions to cat states (typing, reading, etc.)</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 4. Challenges ─── -->
+  <section class="section">
+    <p class="section-label">04 — Challenges</p>
+    <h2>When AI-generated art hit its limits</h2>
+    <p>
+      Early on I tried asking Claude to <strong>generate the visual assets</strong> — the office background,
+      furniture, and cat sprites — procedurally through code. The results were functional but far from the
+      polished pixel-art look I was after. Procedurally drawn rectangles for desks and circles for cats
+      just didn't have the charm I wanted.
+    </p>
+    <div class="callout">
+      <p>
+        This was an important lesson: <strong>AI agents are incredible at architecture, logic, and wiring things
+        together</strong>, but for hand-crafted pixel art, you still need actual art assets. Knowing when to
+        lean on AI and when to find the right resource elsewhere is a key part of working with agents effectively.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─── 5. Solution ─── -->
+  <section class="section">
+    <p class="section-label">05 — The Solution</p>
+    <h2>Finding the right sprite packages</h2>
+    <p>
+      I found some great packages online — <strong>office equipment sprites</strong> (desks, computers, bookshelves,
+      chairs) and a set of <strong>adorable cat sprites</strong> with 10 different skins and multiple animation
+      states. Combined with the tilemap system, these assets brought the office to life.
+    </p>
+    <p>
+      The cat sprite sheet includes 10 skins — tabby, black, white, ginger, tuxedo, grey, calico, siamese,
+      tortoiseshell, and mackerel — each with animations for walking, typing, sleeping, eating, and playing.
+      Each Claude Code session gets assigned a unique cat with its own name and appearance.
+    </p>
+  </section>
+
+  <!-- ─── 6. How it works ─── -->
+  <section class="section">
+    <p class="section-label">06 — How It Works</p>
+    <h2>From agent activity to cat behaviour</h2>
+    <p>
+      The system watches Claude Code's activity logs in real time. When an agent uses a tool, the server
+      maps that action to a cat behaviour and sends the cat to the matching location in the office.
+    </p>
+
+    <table class="behaviour-table">
+      <thead>
+        <tr>
+          <th>Agent Activity</th>
+          <th>Cat Behaviour</th>
+          <th>Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Write / Edit / MultiEdit</td>
+          <td><strong>Typing</strong> — writing code at the computer</td>
+          <td>Desk</td>
+        </tr>
+        <tr>
+          <td>Bash</td>
+          <td><strong>Typing</strong> — running terminal commands</td>
+          <td>Desk</td>
+        </tr>
+        <tr>
+          <td>Read</td>
+          <td><strong>Reading</strong> — browsing through files</td>
+          <td>Bookshelf</td>
+        </tr>
+        <tr>
+          <td>Grep / Glob</td>
+          <td><strong>Searching</strong> — looking for something</td>
+          <td>Bookshelf</td>
+        </tr>
+        <tr>
+          <td>WebFetch / WebSearch</td>
+          <td><strong>Typing</strong> — researching online</td>
+          <td>Desk</td>
+        </tr>
+        <tr>
+          <td>Agent (sub-agent)</td>
+          <td><strong>Typing</strong> — delegating work</td>
+          <td>Desk</td>
+        </tr>
+        <tr>
+          <td>Idle (15s timeout)</td>
+          <td><strong>Eating / Playing / Sleeping</strong> — taking a break</td>
+          <td>Food Bowl / Cat Tree / Cat Bed</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── 7. Learnings ─── -->
+  <section class="section">
+    <p class="section-label">07 — What I Learned</p>
+    <h2>Key takeaways</h2>
+
+    <ul class="learnings-list">
+      <li>
+        <span class="num">1</span>
+        <span class="learn-text">
+          <strong>Sprites and sprite sheets</strong> — How individual animation frames are packed into a single
+          image and sliced by the renderer. Each cat skin has its own sheet with frames for every state.
+        </span>
+      </li>
+      <li>
+        <span class="num">2</span>
+        <span class="learn-text">
+          <strong>Tilemaps and tilesets</strong> — How a grid-based map references tile IDs from a tileset image
+          to efficiently render large scenes. The office uses a 19x12 grid with 32px tiles across 5 layers
+          (Floor, Walls, Office Furniture, Cat Furniture, Computers).
+        </span>
+      </li>
+      <li>
+        <span class="num">3</span>
+        <span class="learn-text">
+          <strong>Sprite Fusion</strong> — Used this tilemap editor for the first time to visually lay out the
+          office. It exports a clean JSON map that the renderer consumes directly.
+        </span>
+      </li>
+      <li>
+        <span class="num">4</span>
+        <span class="learn-text">
+          <strong>Working with AI agents</strong> — Learning when to let the agent handle architecture and wiring
+          vs. when to source assets or make design decisions yourself. The collaboration was most effective when
+          I provided direction and assets while Claude handled the implementation.
+        </span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- ─── 7. Evolution slideshow ─── -->
+  <section class="slideshow-section">
+    <p class="section-label">08 — Evolution</p>
+    <h2>Building the Cat Office, step by step</h2>
+    <p style="color: var(--text-muted); margin-bottom: 8px;">
+      Click through to see how the office evolved — from early procedural sprites all the way to the final
+      tilemap-rendered version.
+    </p>
+
+    <div class="slideshow">
+      <div class="slideshow-viewport" id="slideshow-viewport">
+        <img src="Examples/Office Evolution/1.png" alt="Evolution step 1" class="active" />
+        <img src="Examples/Office Evolution/3.png" alt="Evolution step 2" />
+        <img src="Examples/Office Evolution/4.png" alt="Evolution step 3" />
+        <img src="Examples/Office Evolution/5.png" alt="Evolution step 4" />
+        <img src="Examples/Office Evolution/7.png" alt="Evolution step 5" />
+        <img src="Examples/Office Evolution/8.png" alt="Evolution step 6" />
+        <img src="Examples/Office Evolution/12.png" alt="Evolution step 7" />
+      </div>
+      <div class="slideshow-controls">
+        <button class="slide-btn" id="prev-btn" aria-label="Previous slide">&#8592;</button>
+        <div class="slide-info">
+          <div class="slide-counter" id="slide-counter">1 / 10</div>
+          <div class="slide-caption" id="slide-caption"></div>
+          <div class="slide-dots" id="slide-dots"></div>
+        </div>
+        <button class="slide-btn" id="next-btn" aria-label="Next slide">&#8594;</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ─── 8. Credits ─── -->
+  <section class="section">
+    <p class="section-label">09 — Asset Credits</p>
+    <h2>Thanks to these creators</h2>
+    <p>
+      The visual charm of Cat Office wouldn't have been possible without these fantastic asset packs
+      from the indie game art community.
+    </p>
+
+    <div class="credits-grid">
+      <div class="credit-card">
+        <div class="credit-category">Office Furniture &amp; Equipment</div>
+        <div class="credit-name"><a href="https://donarg.itch.io/" target="_blank" rel="noopener">Donarg</a></div>
+        <p class="credit-desc">Office tileset — desks, computers, chairs, bookshelves, and more.</p>
+      </div>
+      <div class="credit-card">
+        <div class="credit-category">Walls &amp; Floors</div>
+        <div class="credit-name"><a href="https://reakain.itch.io/walls-and-floors-tileset" target="_blank" rel="noopener">Reakain</a></div>
+        <p class="credit-desc">Walls and Floors tileset used for the office interior.</p>
+      </div>
+      <div class="credit-card">
+        <div class="credit-category">Cat Furniture</div>
+        <div class="credit-name"><a href="https://toffeecraft.itch.io/cat-pack" target="_blank" rel="noopener">ToffeeCraft</a></div>
+        <p class="credit-desc">Cat Pack — beds, bowls, cat tree, and toys.</p>
+      </div>
+      <div class="credit-card">
+        <div class="credit-category">Cat Sprites</div>
+        <div class="credit-name"><a href="https://toffeecraft.itch.io/cat-pack" target="_blank" rel="noopener">ToffeeCraft</a></div>
+        <p class="credit-desc">Cat Pack — base cat sprite animations.</p>
+      </div>
+      <div class="credit-card">
+        <div class="credit-category">Cat Sprites</div>
+        <div class="credit-name"><a href="https://dyru.itch.io/modular-pixel-cats-customizable-animated-sprite-pack" target="_blank" rel="noopener">Dyru</a></div>
+        <p class="credit-desc">Modular Pixel Cats — customisable animated sprite pack.</p>
+      </div>
+      <div class="credit-card">
+        <div class="credit-category">Cat Sprites</div>
+        <div class="credit-name"><a href="https://carysaurus.itch.io/black-cat-sprites" target="_blank" rel="noopener">Carysaurus</a></div>
+        <p class="credit-desc">Black Cat Sprites and Black Tuxedo Cat Sprites.</p>
+      </div>
+      <div class="credit-card">
+        <div class="credit-category">Tilemap Editor</div>
+        <div class="credit-name"><a href="https://www.spritefusion.com/" target="_blank" rel="noopener">Sprite Fusion</a></div>
+        <p class="credit-desc">Used to design and export the office tilemap layout.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ─── -->
+  <footer class="footer">
+    <p>AI Agent Cat Office &mdash; A personal project inspired by Customer Engagement and AI class material, 2026</p>
+  </footer>
+
+  <script>
+    const captions = [
+      'One of the first iterations — clunky design, undefined objects, robotic-looking cat agents',
+      'Attempting to make the cats look less robotic — office design still clunky',
+      'Experimenting with sprite images of cats and bringing in furniture — the office starts to take shape',
+      'Failed attempt at trying to use an isometric style',
+      'More issues with placing furniture',
+      'After collecting assets, created an office environment using Sprite Fusion',
+      'Full office layout — polished tilemap office with live agent activity',
+    ];
+
+    let current = 0;
+    const images = document.querySelectorAll('#slideshow-viewport img');
+    const counter = document.getElementById('slide-counter');
+    const caption = document.getElementById('slide-caption');
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const dotsContainer = document.getElementById('slide-dots');
+    const total = images.length;
+
+    // Create dots
+    for (let i = 0; i < total; i++) {
+      const dot = document.createElement('button');
+      dot.className = 'slide-dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+      dot.addEventListener('click', () => goTo(i));
+      dotsContainer.appendChild(dot);
+    }
+
+    function goTo(index) {
+      images[current].classList.remove('active');
+      dotsContainer.children[current].classList.remove('active');
+      current = index;
+      images[current].classList.add('active');
+      dotsContainer.children[current].classList.add('active');
+      counter.textContent = (current + 1) + ' / ' + total;
+      caption.textContent = captions[current] || '';
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === total - 1;
+    }
+
+    prevBtn.addEventListener('click', () => { if (current > 0) goTo(current - 1); });
+    nextBtn.addEventListener('click', () => { if (current < total - 1) goTo(current + 1); });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' && current > 0) goTo(current - 1);
+      if (e.key === 'ArrowRight' && current < total - 1) goTo(current + 1);
+    });
+
+    // Init
+    goTo(0);
+  </script>
+
+</body>
+</html>
